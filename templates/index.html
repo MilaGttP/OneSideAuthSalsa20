@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>One-Side Auth — Salsa20 Visualizer</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>One-Side Authentication Protocol</h1>
+    <p class="subtitle">Salsa20 Stream Cipher &mdash; Interactive Visualization</p>
+  </header>
+
+  <div class="protocol-bar">
+    <span class="proto-label">A &rarr; B:</span>
+    <span class="proto-formula">E<sub>k</sub>(t<sub>A</sub> &#x2016; I<sub>B</sub>)</span>
+  </div>
+
+  <!-- Horizontal progress tracker -->
+  <nav class="progress-track" id="progressTrack">
+    <div class="pt-track-bg"></div>
+    <div class="pt-track-fill" id="ptFill"></div>
+    <div class="pt-step active" id="pt1">
+      <div class="pt-pct">0%</div>
+      <div class="pt-dot"><span></span></div>
+      <div class="pt-label">Key &amp; ID</div>
+    </div>
+    <div class="pt-step locked" id="pt2">
+      <div class="pt-pct">25%</div>
+      <div class="pt-dot"><span></span></div>
+      <div class="pt-label">Timestamp</div>
+    </div>
+    <div class="pt-step locked" id="pt3">
+      <div class="pt-pct">50%</div>
+      <div class="pt-dot"><span></span></div>
+      <div class="pt-label">Salsa20</div>
+    </div>
+    <div class="pt-step locked" id="pt4">
+      <div class="pt-pct">75%</div>
+      <div class="pt-dot"><span></span></div>
+      <div class="pt-label">Ciphertext</div>
+    </div>
+    <div class="pt-step locked" id="pt5">
+      <div class="pt-pct">100%</div>
+      <div class="pt-dot"><span></span></div>
+      <div class="pt-label">Auth</div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- STEP 1 -->
+    <section class="step" id="step1">
+      <div class="step-header">
+        <span class="step-num">1</span>
+        <span class="step-title">Shared Key &amp; Server ID</span>
+        <span class="step-side side-a">User A</span>
+      </div>
+      <div class="step-body">
+        <div class="field-group">
+          <label>Shared Key k (256-bit, 64 hex chars)</label>
+          <div class="input-row">
+            <input type="text" id="keyInput" maxlength="64" placeholder="e.g. 000102030405...1f"
+              value="000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"/>
+            <button class="btn-secondary" onclick="randomKey()">Random</button>
+          </div>
+          <div class="hint" id="keyHint"></div>
+        </div>
+        <div class="field-group">
+          <label>Server ID I<sub>B</sub> <span class="label-note">(known to both sides — used as expected value on server)</span></label>
+          <input type="text" id="serverIdInput" placeholder="e.g. SERVER-ALPHA-01" value="SERVER-ALPHA-01"/>
+          <div class="hint" id="idHint"></div>
+        </div>
+        <div class="field-group">
+          <label>Replay Window &Delta;t (seconds)</label>
+          <input type="number" id="deltaTInput" value="30" min="1" max="3600" style="width:120px"/>
+        </div>
+        <button class="btn-primary" onclick="runStep1()">Next &rarr; Generate Timestamp</button>
+      </div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step locked" id="step2">
+      <div class="step-header">
+        <span class="step-num">2</span>
+        <span class="step-title">Timestamp Generation &amp; Concatenation</span>
+        <span class="step-side side-a">User A</span>
+      </div>
+      <div class="step-body">
+        <div class="info-grid">
+          <div class="info-cell">
+            <div class="info-label">t<sub>A</sub> (Unix timestamp)</div>
+            <div class="info-value mono" id="tAValue">—</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-label">t<sub>A</sub> (hex, 8 bytes)</div>
+            <div class="info-value mono" id="tAHex">—</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-label">I<sub>B</sub> (hex)</div>
+            <div class="info-value mono" id="idHex">—</div>
+          </div>
+        </div>
+        <div class="concat-box">
+          <span class="concat-label">Plaintext = t<sub>A</sub> &#x2016; I<sub>B</sub></span>
+          <div class="mono glow-text" id="plaintextHex">—</div>
+        </div>
+        <button class="btn-primary" onclick="runStep3()">Next &rarr; Salsa20 Encrypt</button>
+      </div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step locked" id="step3">
+      <div class="step-header">
+        <span class="step-num">3</span>
+        <span class="step-title">Salsa20 State Matrix (ARX Core)</span>
+        <span class="step-side side-a">User A — E<sub>k</sub></span>
+      </div>
+      <div class="step-body">
+        <div class="matrices-wrap">
+          <div class="matrix-block">
+            <div class="matrix-title">Initial State</div>
+            <table class="matrix" id="initMatrix"></table>
+            <div class="matrix-legend">
+              <span class="leg-sigma">&#x25A0; sigma</span>
+              <span class="leg-key">&#x25A0; key</span>
+              <span class="leg-nonce">&#x25A0; nonce/ctr</span>
+            </div>
+          </div>
+          <div class="matrix-arrow">&#x27A1;</div>
+          <div class="matrix-block">
+            <div class="matrix-title">After 20 Rounds
+              <span class="qr-help-icon" id="qrHelpBtn" title="Quarter-Round explained">?</span>
+            </div>
+            <table class="matrix" id="outMatrix"></table>
+          </div>
+        </div>
+        <div class="arx-note">
+          Each round applies <strong>Quarter-Round</strong>:
+          b&oplus;=(a+d)&lt;&lt;&lt;7 &nbsp;|&nbsp; c&oplus;=(b+a)&lt;&lt;&lt;9 &nbsp;|&nbsp;
+          d&oplus;=(c+b)&lt;&lt;&lt;13 &nbsp;|&nbsp; a&oplus;=(d+c)&lt;&lt;&lt;18
+        </div>
+        <div class="field-group" style="margin-top:1rem">
+          <div class="info-label">Nonce (64-bit, hex)</div>
+          <div class="mono" id="nonceDisplay">—</div>
+        </div>
+        <button class="btn-primary" onclick="showStep4()">Next &rarr; Ciphertext</button>
+      </div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step locked" id="step4">
+      <div class="step-header">
+        <span class="step-num">4</span>
+        <span class="step-title">Ciphertext Hex Dump</span>
+        <span class="step-side side-a">Transmitted Packet</span>
+      </div>
+      <div class="step-body">
+        <div class="hexdump-box">
+          <div class="hexdump-header">
+            <span>E<sub>k</sub>(t<sub>A</sub> &#x2016; I<sub>B</sub>)</span>
+            <button class="btn-copy" id="copyBtn" onclick="copyCiphertext()" title="Copy to clipboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              <span id="copyLabel">Copy</span>
+            </button>
+          </div>
+          <div class="mono hexdump" id="ciphertextHex">—</div>
+        </div>
+        <div class="transmission-anim">
+          <div class="packet-dot"></div>
+          <div class="wire"></div>
+          <span class="wire-label">A &rarr; B</span>
+        </div>
+        <button class="btn-primary" onclick="activateStep5()">Next &rarr; Server Authentication</button>
+      </div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step locked" id="step5">
+      <div class="step-header">
+        <span class="step-num">5</span>
+        <span class="step-title">Server Authentication Decision</span>
+        <span class="step-side side-b">User B</span>
+      </div>
+      <div class="step-body">
+        <div class="tamper-box">
+          <div class="tamper-title">&#x26A0; Server Configuration (User B side)</div>
+          <div class="tamper-row">
+            <div class="field-group" style="flex:1">
+              <label>Server's expected I<sub>B</sub> <span class="label-note">(what the server believes its own ID is)</span></label>
+              <input type="text" id="serverExpectedId" placeholder="Must match encrypted I_B to grant access"/>
+            </div>
+          </div>
+        </div>
+        <div class="auth-grid">
+          <div class="auth-cell">
+            <div class="auth-label">Decrypted t<sub>A</sub></div>
+            <div class="mono auth-val" id="authTA">—</div>
+          </div>
+          <div class="auth-cell">
+            <div class="auth-label">Server time t<sub>B</sub></div>
+            <div class="mono auth-val" id="authTB">—</div>
+          </div>
+          <div class="auth-cell">
+            <div class="auth-label">&Delta;t* = |t<sub>B</sub> &minus; t<sub>A</sub>|</div>
+            <div class="mono auth-val" id="authDeltaStar">—</div>
+          </div>
+          <div class="auth-cell">
+            <div class="auth-label">Allowed &Delta;t</div>
+            <div class="mono auth-val" id="authDelta">—</div>
+          </div>
+          <div class="auth-cell">
+            <div class="auth-label">I<sub>B</sub>* (decrypted)</div>
+            <div class="mono auth-val" id="authIDExtracted">—</div>
+          </div>
+          <div class="auth-cell auth-cell-expected">
+            <div class="auth-label">Expected I<sub>B</sub> <span class="label-note">(server's configured value)</span></div>
+            <div class="mono auth-val" id="authIDExpected">—</div>
+          </div>
+        </div>
+        <div class="checks">
+          <div class="check-row" id="checkID">
+            <span class="check-icon"></span>
+            <span>I<sub>B</sub>* == I<sub>B</sub></span>
+          </div>
+          <div class="check-row" id="checkTime">
+            <span class="check-icon"></span>
+            <span>&Delta;t* &le; &Delta;t</span>
+          </div>
+        </div>
+        <button class="btn-primary btn-authenticate" onclick="runStep5()">&#x1F512; Authenticate</button>
+        <div class="decision-box" id="decisionBox">
+          <div class="decision-text" id="decisionText">Awaiting...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- QR popup -->
+  <div class="qr-overlay" id="qrOverlay" onclick="closeQRHelp()">
+    <div class="qr-popup" onclick="event.stopPropagation()">
+      <div class="qr-popup-title">Quarter-Round — ARX in action</div>
+      <p class="qr-desc">Each quarter-round mixes 4 words from the 4×4 state matrix using <strong>A</strong>ddition, <strong>R</strong>otation, <strong>X</strong>OR:</p>
+      <div class="qr-formula-block">
+        <div class="qr-line"><span class="qr-var qr-b">b</span> ^= ROT(<span class="qr-var qr-a">a</span> + <span class="qr-var qr-d">d</span>, 7)</div>
+        <div class="qr-line"><span class="qr-var qr-c">c</span> ^= ROT(<span class="qr-var qr-b">b</span> + <span class="qr-var qr-a">a</span>, 9)</div>
+        <div class="qr-line"><span class="qr-var qr-d">d</span> ^= ROT(<span class="qr-var qr-c">c</span> + <span class="qr-var qr-b">b</span>, 13)</div>
+        <div class="qr-line"><span class="qr-var qr-a">a</span> ^= ROT(<span class="qr-var qr-d">d</span> + <span class="qr-var qr-c">c</span>, 18)</div>
+      </div>
+      <p class="qr-desc">Applied to columns then rows — 10 times = 20 rounds total. The output block is added back to the initial state (feed-forward), making it irreversible without the key.</p>
+      <button class="btn-secondary" onclick="closeQRHelp()">Close</button>
+    </div>
+  </div>
+
+  <div class="reset-bar">
+    <button class="btn-reset" onclick="resetAll()">&#x21BA; Reset Demo</button>
+  </div>
+
+  <footer>
+    <p>Salsa20 ARX core implemented from scratch &mdash; Educational use only</p>
+  </footer>
+
+  <script src="/static/js/script.js"></script>
+</body>
+</html>
