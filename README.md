@@ -26,6 +26,13 @@ This project was developed as a course work to visualize cryptographic processes
 
 ## Getting Started
 
+### Clone Repo
+
+```bash
+git clone https://github.com/MilaGttP/OneSideAuthSalsa20.git
+cd OneSideAuthSalsa20
+```
+
 ### Set Up a Virtual Environment
 
 **Windows:**
