@@ -382,7 +382,7 @@ input:focus {
   background: linear-gradient(90deg, transparent, var(--accent-a), transparent);
   opacity: .4;
 }
-.info-value { font-family: var(--mono-font); font-size: 1.05rem; word-break: break-all; color: var(--accent-a); margin-top: .2rem; }
+.info-value { font-family: var(--mono-font); font-size: 1.05rem; word-break: break-all; color: var(--accent-a); margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .concat-box {
   background: var(--surface2);
@@ -588,7 +588,7 @@ input:focus {
   background: linear-gradient(90deg, transparent, var(--accent-a), transparent);
   opacity: .3;
 }
-.auth-val { font-family: var(--mono-font); font-size: 1.05rem; color: var(--text); word-break: break-all; margin-top: .2rem; }
+.auth-val { font-family: var(--mono-font); font-size: 1.05rem; color: var(--text); word-break: break-all; margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .auth-cell-expected { border-color: rgba(191,95,255,.35) !important; }
 .auth-cell-expected::before { background: linear-gradient(90deg, transparent, var(--accent-b), transparent) !important; opacity: .4 !important; }
 .auth-cell-expected .auth-val { color: var(--accent-b); }
@@ -730,6 +730,8 @@ footer {
 }
 .btn-copy:hover { background: rgba(0,230,118,.08); box-shadow: 0 0 10px rgba(0,230,118,.3); }
 .btn-copy.copied { border-color: var(--accent-a); color: var(--accent-a); }
+
+.unix-label { font-size: .75em; opacity: .6; }
 
 /* ---- Matrix shuffle ---- */
 @keyframes cellFlicker {

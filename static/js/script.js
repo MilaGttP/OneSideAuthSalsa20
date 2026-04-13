@@ -127,7 +127,7 @@ async function runStep1() {
   }
 
   // Populate Step 2 fields
-  document.getElementById('tAValue').textContent    = data.timestamp + ' (Unix)';
+  document.getElementById('tAValue').innerHTML      = data.timestamp + ' <span class="unix-label">(Unix)</span>';
   document.getElementById('tAHex').textContent      = data.timestamp_hex;
   document.getElementById('idHex').textContent      = data.server_id_hex;
   document.getElementById('plaintextHex').textContent = data.plaintext_hex;
@@ -282,8 +282,8 @@ async function runStep5() {
   }
 
   // Populate auth grid
-  document.getElementById('authTA').textContent          = data.t_a_extracted + ' (Unix)';
-  document.getElementById('authTB').textContent          = data.t_b + ' (Unix)';
+  document.getElementById('authTA').innerHTML          = data.t_a_extracted + ' <span class="unix-label">(Unix)</span>';
+  document.getElementById('authTB').innerHTML          = data.t_b + ' <span class="unix-label">(Unix)</span>';
   document.getElementById('authDeltaStar').textContent   = data.delta_t_star + ' s';
   document.getElementById('authDelta').textContent       = data.delta_t + ' s';
   document.getElementById('authIDExtracted').textContent = data.id_extracted;
