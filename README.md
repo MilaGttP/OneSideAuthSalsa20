@@ -23,3 +23,40 @@ This project was developed as a course work to visualize cryptographic processes
 2. **Encryption:** The packet is encrypted using Salsa20 with a shared secret key $k$.
 3. **Server Side:** Decrypts the packet, extracts the identifier, and calculates the time delay $\Delta t^* = t_B - t_A$.
 4. **Decision:** Access is granted only if the server ID matches and the delay $\Delta t^*$ is within the allowed window $\Delta t$.
+
+## Installation & Setup
+
+To get this project running locally, follow these steps:
+
+Clone the Repository:
+
+Bash
+git clone https://github.com/MilaGttP/OneSideAuthSalsa20.git
+cd OneSideAuthSalsa20
+Create a Virtual Environment:
+
+Windows:
+
+Bash
+python -m venv venv
+venv\Scripts\activate
+macOS/Linux:
+
+Bash
+python3 -m venv venv
+source venv/bin/activate
+Install Dependencies:
+
+Bash
+pip install -r requirements.txt
+Run the Application:
+
+Bash
+python app.py
+Access the Dashboard:
+Open your browser and navigate to http://localhost:5000
+
+Author
+Liudmyla — MilaGttP
+
+Developed as a Course Project at VNTU, 2026.
