@@ -60,9 +60,7 @@ function activateStep(stepId) {
 /** Sync the horizontal progress tracker with the current active step. */
 function syncProgressTracker(activeStepId) {
   const order = ['step1','step2','step3','step4','step5'];
-  // Dots live between 10% and 90% of the bar
   const positions = [10, 30, 50, 70, 90];
-  // Fill goes from left:10% and covers the span between dots
   const fillWidths = [0, 20, 40, 60, 80];
   const activeIdx = order.indexOf(activeStepId);
 
@@ -78,7 +76,6 @@ function syncProgressTracker(activeStepId) {
   document.getElementById('ptFill').style.width = fillWidths[activeIdx] + '%';
 }
 
-/** Generate a random 32-byte hex key. */
 function randomKey() {
   const arr = new Uint8Array(32);
   crypto.getRandomValues(arr);
@@ -117,7 +114,6 @@ async function runStep1() {
       server_id: state.serverId,
     });
   } catch (e) {
-    // Show under the relevant field based on error content
     if (e.message.toLowerCase().includes('server id')) {
       document.getElementById('idHint').textContent = e.message;
     } else {
@@ -126,10 +122,9 @@ async function runStep1() {
     return;
   }
 
-  // Populate Step 2 fields
-  document.getElementById('tAValue').innerHTML      = data.timestamp + ' <span class="unix-label">(Unix)</span>';
-  document.getElementById('tAHex').textContent      = data.timestamp_hex;
-  document.getElementById('idHex').textContent      = data.server_id_hex;
+  document.getElementById('tAValue').innerHTML = data.timestamp + ' <span class="unix-label">(Unix)</span>';
+  document.getElementById('tAHex').textContent = data.timestamp_hex;
+  document.getElementById('idHex').textContent = data.server_id_hex;
   document.getElementById('plaintextHex').textContent = data.plaintext_hex;
 
   state.plaintextHex = data.plaintext_hex;
@@ -152,19 +147,16 @@ async function runStep3() {
     return;
   }
 
-  state.nonceHex      = data.nonce_hex;
+  state.nonceHex = data.nonce_hex;
   state.ciphertextHex = data.ciphertext_b64;
 
   document.getElementById('nonceDisplay').textContent = data.nonce_hex;
   document.getElementById('ciphertextHex').textContent = data.ciphertext_hex;
 
-  // Render initial matrix immediately (static)
   renderMatrix('initMatrix', data.initial_matrix, true);
 
-  // Activate step first so the matrix is visible during shuffle
   activateStep('step3');
 
-  // Shuffle the output matrix for 1.5s, then snap to final values
   await shuffleMatrix('outMatrix', data.output_matrix, 1500);
 }
 
@@ -176,7 +168,6 @@ function shuffleMatrix(tableId, finalMatrix, duration) {
   return new Promise(resolve => {
     const table = document.getElementById(tableId);
 
-    // Build the table structure with placeholder cells
     table.innerHTML = '';
     const cells = [];
     finalMatrix.forEach(row => {
@@ -191,12 +182,10 @@ function shuffleMatrix(tableId, finalMatrix, duration) {
       table.appendChild(tr);
     });
 
-    // Rapidly randomise cell values
     const interval = setInterval(() => {
       cells.forEach(td => { td.textContent = randomHex32(); });
     }, 80);
 
-    // After duration, stop and show real values
     setTimeout(() => {
       clearInterval(interval);
       cells.forEach((td, i) => {
@@ -224,7 +213,6 @@ function renderMatrix(tableId, matrix, colorCode) {
   const table = document.getElementById(tableId);
   table.innerHTML = '';
 
-  // Salsa20 initial state color map (flat index → class)
   const colorMap = {
     0: 'cell-sigma', 5: 'cell-sigma', 10: 'cell-sigma', 15: 'cell-sigma',
     1: 'cell-key',   2: 'cell-key',   3: 'cell-key',    4: 'cell-key',
@@ -263,37 +251,33 @@ function activateStep5() {
 // ── Step 4 → Step 5 (server authentication) ───────────────────────────────
 
 async function runStep5() {
-  // Server uses its OWN expected ID — may differ from what was encrypted
   const serverExpected = document.getElementById('serverExpectedId').value.trim() || state.serverId;
   const deltaTServer   = state.deltaT;
 
   let data;
   try {
     data = await apiFetch('/api/step/authenticate', {
-      key:            state.key,
-      nonce:          state.nonceHex,
+      key: state.key,
+      nonce: state.nonceHex,
       ciphertext_hex: state.ciphertextHex,
-      server_id:      serverExpected,   // server checks against THIS value
-      delta_t:        deltaTServer,
+      server_id: serverExpected, 
+      delta_t: deltaTServer,
     });
   } catch (e) {
     alert('Authentication error: ' + e.message);
     return;
   }
 
-  // Populate auth grid
-  document.getElementById('authTA').innerHTML          = data.t_a_extracted + ' <span class="unix-label">(Unix)</span>';
-  document.getElementById('authTB').innerHTML          = data.t_b + ' <span class="unix-label">(Unix)</span>';
-  document.getElementById('authDeltaStar').textContent   = data.delta_t_star + ' s';
-  document.getElementById('authDelta').textContent       = data.delta_t + ' s';
+  document.getElementById('authTA').innerHTML = data.t_a_extracted + ' <span class="unix-label">(Unix)</span>';
+  document.getElementById('authTB').innerHTML = data.t_b + ' <span class="unix-label">(Unix)</span>';
+  document.getElementById('authDeltaStar').textContent = data.delta_t_star + ' s';
+  document.getElementById('authDelta').textContent = data.delta_t + ' s';
   document.getElementById('authIDExtracted').textContent = data.id_extracted;
-  document.getElementById('authIDExpected').textContent  = serverExpected;
+  document.getElementById('authIDExpected').textContent = serverExpected;
 
-  // Check rows
   setCheck('checkID',   data.id_match);
   setCheck('checkTime', data.time_ok);
 
-  // Decision
   const box  = document.getElementById('decisionBox');
   const text = document.getElementById('decisionText');
   if (data.access_granted) {
@@ -303,27 +287,23 @@ async function runStep5() {
     box.className  = 'decision-box denied';
     text.textContent = '✗  ACCESS DENIED';
   }
-  // step5 is already active — no need to call activateStep again
 }
 
 function setCheck(id, passed) {
   const el = document.getElementById(id);
   el.classList.remove('pass', 'fail');
   el.classList.add(passed ? 'pass' : 'fail');
-  // clear the ? placeholder
   el.querySelector('.check-icon').textContent = '';
 }
 
 // ── Reset ──────────────────────────────────────────────────────────────────
 
 function resetAll() {
-  // Clear shared state
   Object.assign(state, {
     key: '', serverId: '', deltaT: 30,
     plaintextHex: '', nonceHex: '', ciphertextHex: '',
   });
 
-  // Reset form inputs to defaults
   document.getElementById('keyInput').value =
     '000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f';
   document.getElementById('serverIdInput').value = 'SERVER-ALPHA-01';
@@ -332,7 +312,6 @@ function resetAll() {
 
   document.getElementById('serverExpectedId').value = '';
 
-  // Reset display fields
   ['tAValue','tAHex','idHex','plaintextHex','nonceDisplay','ciphertextHex',
    'authTA','authTB','authDeltaStar','authDelta','authIDExtracted','authIDExpected',
    'decisionText'].forEach(id => {
@@ -340,25 +319,21 @@ function resetAll() {
     if (el) el.textContent = '—';
   });
 
-  // Reset matrices
   ['initMatrix','outMatrix'].forEach(id => {
     const t = document.getElementById(id);
     if (t) t.innerHTML = '';
   });
 
-  // Reset check rows
   ['checkID','checkTime'].forEach(id => {
     const el = document.getElementById(id);
     el.classList.remove('pass','fail');
     el.querySelector('.check-icon').textContent = '';
   });
 
-  // Reset decision box
   const box = document.getElementById('decisionBox');
   box.className = 'decision-box';
   document.getElementById('decisionText').textContent = 'Awaiting...';
 
-  // Lock all steps except step1
   document.querySelectorAll('.step').forEach(s => {
     s.classList.remove('active','done','locked');
   });
