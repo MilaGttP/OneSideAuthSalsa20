@@ -18,10 +18,12 @@ def client():
 
 # --- salsa20_core ---
 
+@pytest.mark.core
 def test_quarter_round_changes_values():
     a, b, c, d = quarter_round(1, 2, 3, 4)
     assert (a, b, c, d) != (1, 2, 3, 4)
 
+@pytest.mark.core
 def test_quarter_round_known_vector():
     a, b, c, d = quarter_round(0x00000001, 0x00000000, 0x00000000, 0x00000000)
     assert a == 0x08008145
@@ -29,31 +31,37 @@ def test_quarter_round_known_vector():
     assert c == 0x00010200
     assert d == 0x20500000
 
+@pytest.mark.core
 def test_encrypt_decrypt_roundtrip():
     msg = b"Hello, Salsa20!"
     ct, _ = salsa20_encrypt(KEY, NONCE, msg)
     pt, _ = salsa20_decrypt(KEY, NONCE, ct)
     assert pt == msg
 
+@pytest.mark.core
 def test_ciphertext_differs_from_plaintext():
     msg = b"test message"
     ct, _ = salsa20_encrypt(KEY, NONCE, msg)
     assert ct != msg
 
+@pytest.mark.core
 def test_different_keys_give_different_ciphertext():
     msg = b"same plaintext"
     ct1, _ = salsa20_encrypt(KEY, NONCE, msg)
     ct2, _ = salsa20_encrypt(bytes([0xFF]*32), NONCE, msg)
     assert ct1 != ct2
 
+@pytest.mark.core
 def test_ciphertext_same_length_as_plaintext():
     msg = b"length check!!"
     ct, _ = salsa20_encrypt(KEY, NONCE, msg)
     assert len(ct) == len(msg)
 
+@pytest.mark.core
 def test_build_state_is_16_words():
     assert len(build_state(KEY, NONCE, 0)) == 16
 
+@pytest.mark.core
 def test_wrong_key_cannot_decrypt():
     msg = b"secret"
     ct, _ = salsa20_encrypt(KEY, NONCE, msg)
@@ -62,30 +70,37 @@ def test_wrong_key_cannot_decrypt():
 
 # --- Flask API ---
 
+@pytest.mark.api
 def test_index_ok(client):
     assert client.get('/').status_code == 200
 
+@pytest.mark.api
 def test_prepare_ok(client):
     r = client.post('/api/step/prepare', json={'key': KEY.hex(), 'server_id': 'TEST'})
     assert r.status_code == 200
     assert 'timestamp' in r.get_json()
 
+@pytest.mark.api
 def test_prepare_bad_key(client):
     r = client.post('/api/step/prepare', json={'key': 'zzzz', 'server_id': 'TEST'})
     assert r.status_code == 400
 
+@pytest.mark.api
 def test_prepare_key_too_short(client):
     r = client.post('/api/step/prepare', json={'key': 'aabb', 'server_id': 'TEST'})
     assert r.status_code == 400
 
+@pytest.mark.api
 def test_prepare_server_id_too_long(client):
     r = client.post('/api/step/prepare', json={'key': KEY.hex(), 'server_id': 'A'*33})
     assert r.status_code == 400
 
+@pytest.mark.api
 def test_prepare_empty_server_id(client):
     r = client.post('/api/step/prepare', json={'key': KEY.hex(), 'server_id': ''})
     assert r.status_code == 400
 
+@pytest.mark.api
 def test_encrypt_ok(client):
     r = client.post('/api/step/encrypt', json={
         'key': KEY.hex(), 'nonce': NONCE.hex(), 'plaintext_hex': (b'\x00'*40).hex()
@@ -94,6 +109,7 @@ def test_encrypt_ok(client):
     data = r.get_json()
     assert len(data['initial_matrix']) == 4
 
+@pytest.mark.api
 def test_authenticate_granted(client):
     sid = 'SERVER-01'
     plaintext = struct.pack('>Q', 9999999999) + sid.encode().ljust(32, b'\x00')
@@ -106,6 +122,7 @@ def test_authenticate_granted(client):
     assert data['id_match'] is True
     assert data['access_granted'] is True
 
+@pytest.mark.api
 def test_authenticate_wrong_id(client):
     sid = 'SERVER-01'
     plaintext = struct.pack('>Q', 9999999999) + sid.encode().ljust(32, b'\x00')
@@ -118,6 +135,7 @@ def test_authenticate_wrong_id(client):
     assert data['id_match'] is False
     assert data['access_granted'] is False
 
+@pytest.mark.api
 def test_authenticate_expired_timestamp(client):
     sid = 'SERVER-01'
     plaintext = struct.pack('>Q', 1) + sid.encode().ljust(32, b'\x00')
